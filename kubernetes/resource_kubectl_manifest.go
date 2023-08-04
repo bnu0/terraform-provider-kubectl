@@ -477,6 +477,7 @@ func resourceKubectlManifestApply(ctx context.Context, d *schema.ResourceData, m
 				Filenames: []string{tmpfile.Name()},
 			},
 		},
+		Recorder: genericclioptions.NoopRecorder{},
 		ToPrinter: func(string) (printers.ResourcePrinter, error) {
 			return printers.NewDiscardingPrinter(), nil
 		},

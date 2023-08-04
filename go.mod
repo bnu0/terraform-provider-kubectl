@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/hashicorp/go-plugin v1.4.9
+	github.com/hashicorp/go-plugin v1.4.10
 	github.com/hashicorp/hcl/v2 v2.16.2
 	github.com/hashicorp/terraform v0.12.29
 	github.com/hashicorp/terraform-plugin-go v0.15.0

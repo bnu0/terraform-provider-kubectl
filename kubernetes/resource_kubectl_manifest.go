@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/printers"
 	"os"
 	"sort"
@@ -464,7 +466,7 @@ func resourceKubectlManifestApply(ctx context.Context, d *schema.ResourceData, m
 	tmpfile, _ := ioutil.TempFile("", "*kubectl_manifest.yaml")
 	_, _ = tmpfile.Write([]byte(yamlBody))
 	_ = tmpfile.Close()
-
+	pf := ""
 	applyOptions := &apply.ApplyOptions{
 		IOStreams: genericclioptions.IOStreams{
 			In:     strings.NewReader(yamlBody),
@@ -477,7 +479,12 @@ func resourceKubectlManifestApply(ctx context.Context, d *schema.ResourceData, m
 				Filenames: []string{tmpfile.Name()},
 			},
 		},
-		Recorder: genericclioptions.NoopRecorder{},
+		PrintFlags: &genericclioptions.PrintFlags{
+			OutputFormat: &pf,
+		},
+		VisitedUids:       sets.New[types.UID](),
+		VisitedNamespaces: sets.New[string](),
+		Recorder:          genericclioptions.NoopRecorder{},
 		ToPrinter: func(string) (printers.ResourcePrinter, error) {
 			return printers.NewDiscardingPrinter(), nil
 		},
@@ -783,9 +790,8 @@ func checkAPIResourceIsPresent(available []*meta_v1.APIResourceList, resource me
 		}
 		group := rList.GroupVersion
 		for _, r := range rList.APIResources {
-			if group == resource.GroupVersionKind().GroupVersion().String() && r.Kind == resource.GetKind() {
-				r.Group = rList.GroupVersion
-				r.Kind = rList.Kind
+			if gvk := resource.GroupVersionKind(); group == gvk.GroupVersion().String() && r.Kind == resource.GetKind() {
+				r.Group, r.Version, r.Kind = gvk.Group, gvk.Version, gvk.Kind
 				return &r, true
 			}
 		}
